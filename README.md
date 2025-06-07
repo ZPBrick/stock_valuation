@@ -36,13 +36,13 @@ stock_valuation/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/stock_valuation.git
+git clone git@github.com:ZPBrick/stock_valuation.git
 cd stock_valuation
 ```
 
 2. Install dependencies:
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ## Usage
@@ -54,7 +54,7 @@ export ALPHA_VANTAGE_API_KEY="your_api_key"
 
 2. Run the DCF analysis:
 ```bash
-python examples/dcf_analyzer.py
+python3 examples/dcf_analyzer.py
 ```
 
 ## Example Output

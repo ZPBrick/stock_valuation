@@ -85,7 +85,8 @@ def main():
         return
     
     # 分析示例股票
-    tickers = ['NVDA', 'AAPL', 'META']
+    # tickers = ['NVDA', 'AAPL', 'META']
+    tickers = ['NVDA']
     for ticker in tickers:
         analyze_stock(ticker)
         print("\n" + "="*50)
