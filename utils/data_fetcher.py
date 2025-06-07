@@ -1,10 +1,12 @@
 import os
 import json
 import time
+import yfinance as yf
 from datetime import datetime, timedelta
 import requests
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 from alpha_vantage.fundamentaldata import FundamentalData
+from dotenv import load_dotenv
 
 class DataFetcher:
     def __init__(self, api_key: str = None, cache_dir: str = None, cache_hours: int = 24):
@@ -16,6 +18,7 @@ class DataFetcher:
             cache_dir (str): 缓存目录路径
             cache_hours (int): 缓存有效期（小时）
         """
+        load_dotenv()
         self.api_key = api_key or os.getenv('ALPHA_VANTAGE_API_KEY')
         if not self.api_key:
             raise ValueError("请提供Alpha Vantage API密钥")
@@ -58,18 +61,46 @@ class DataFetcher:
         except:
             return None
     
-    def get_company_overview(self, ticker: str) -> Dict:
+    def get_yfinance_data(self, ticker: str) -> Dict:
+        """从Yahoo Finance获取数据"""
+        try:
+            print(f"从Yahoo Finance获取{ticker}的数据...")
+            stock = yf.Ticker(ticker)
+            
+            # 获取基本信息
+            info = stock.info
+            
+            # 获取财务数据
+            financials = {
+                'balance_sheet': stock.balance_sheet.to_dict(orient='records') if not stock.balance_sheet.empty else [],
+                'income_stmt': stock.income_stmt.to_dict(orient='records') if not stock.income_stmt.empty else [],
+                'cash_flow': stock.cashflow.to_dict(orient='records') if not stock.cashflow.empty else []
+            }
+            
+            return {
+                'overview': info,
+                'financials': financials
+            }
+        except Exception as e:
+            print(f"从Yahoo Finance获取数据时出错: {str(e)}")
+            return {}
+    
+    def get_company_overview(self, ticker: str, source: str = 'alpha_vantage', use_cache: bool = True) -> Dict:
         """获取公司概览数据"""
-        # 尝试从缓存加载
-        overview = self.load_from_cache(ticker, 'overview')
-        if overview:
-            print(f"从缓存加载{ticker}的公司概览数据")
-            return overview
+        if use_cache:
+            overview = self.load_from_cache(ticker, 'overview')
+            if overview:
+                print(f"从缓存加载{ticker}的公司概览数据")
+                return overview
+
+        if source == 'yfinance':
+            yf_data = self.get_yfinance_data(ticker)
+            if yf_data and 'overview' in yf_data:
+                self.save_to_cache(yf_data['overview'], ticker, 'overview')
+                return yf_data['overview']
         
-        # 从API获取数据
         print(f"从Alpha Vantage获取{ticker}的数据...")
         try:
-            # 获取实时报价
             quote_url = f'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={self.api_key}'
             response = requests.get(quote_url)
             quote_data = response.json()
@@ -80,7 +111,6 @@ class DataFetcher:
                 current_price = float(quote.get('05. price', 0))
                 print(f"成功获取{ticker}的实时价格数据: ${current_price}")
             
-            # 获取公司概览
             overview_data, _ = self.fd.get_company_overview(ticker)
             print(f"成功获取{ticker}的公司概览数据")
             
@@ -89,11 +119,9 @@ class DataFetcher:
             else:
                 overview = overview_data.to_dict(orient='records')[0]
             
-            # 更新市场价格
             if current_price:
                 overview['MarketPrice'] = current_price
             
-            # 保存到缓存
             self.save_to_cache(overview, ticker, 'overview')
             return overview
             
@@ -101,45 +129,42 @@ class DataFetcher:
             print(f"获取公司概览数据时出错: {str(e)}")
             return {}
     
-    def get_financial_data(self, ticker: str) -> Dict:
+    def get_financial_data(self, ticker: str, source: str = 'alpha_vantage', use_cache: bool = True) -> Dict:
         """获取公司财务数据"""
-        # 尝试从缓存加载
-        financials = self.load_from_cache(ticker, 'financials')
-        if financials:
-            print(f"从缓存加载{ticker}的财务数据")
-            return financials
+        if use_cache:
+            financials = self.load_from_cache(ticker, 'financials')
+            if financials:
+                print(f"从缓存加载{ticker}的财务数据")
+                return financials
+
+        if source == 'yfinance':
+            yf_data = self.get_yfinance_data(ticker)
+            if yf_data and 'financials' in yf_data:
+                self.save_to_cache(yf_data['financials'], ticker, 'financials')
+                return yf_data['financials']
         
         try:
             print(f"从Alpha Vantage获取{ticker}的财务数据...")
-            
-            # 获取现金流量表
-            print("获取现金流量表...")
             cash_flow_df, _ = self.fd.get_cash_flow_annual(ticker)
             if cash_flow_df.empty:
                 raise ValueError("现金流量表数据为空")
-            time.sleep(12)  # Alpha Vantage API限制
+            time.sleep(12)
             
-            # 获取资产负债表
-            print("获取资产负债表...")
             balance_sheet_df, _ = self.fd.get_balance_sheet_annual(ticker)
             if balance_sheet_df.empty:
                 raise ValueError("资产负债表数据为空")
-            time.sleep(12)  # Alpha Vantage API限制
+            time.sleep(12)
             
-            # 获取利润表
-            print("获取利润表...")
             income_stmt_df, _ = self.fd.get_income_statement_annual(ticker)
             if income_stmt_df.empty:
                 raise ValueError("利润表数据为空")
             
-            # 转换DataFrame为字典
             financials = {
                 'cash_flow': cash_flow_df.to_dict(orient='records'),
                 'balance_sheet': balance_sheet_df.to_dict(orient='records'),
                 'income_stmt': income_stmt_df.to_dict(orient='records')
             }
             
-            # 保存到缓存
             self.save_to_cache(financials, ticker, 'financials')
             return financials
             

@@ -10,6 +10,7 @@ A comprehensive stock valuation toolkit that implements various valuation models
   - AI impact consideration
   - Competitive advantage analysis
   - Company type specific parameters
+  - **Multiple data source support (Alpha Vantage & Yahoo Finance)**
 
 ## Project Structure
 
@@ -19,7 +20,7 @@ stock_valuation/
 │   └── dcf_model.py
 ├── data/           # Data storage and caching
 ├── utils/          # Utility functions
-├── examples/       # Example scripts
+├── app/            # Main application scripts
 │   └── dcf_analyzer.py
 └── tests/          # Test cases
 ```
@@ -31,6 +32,8 @@ stock_valuation/
 - numpy
 - requests
 - alpha_vantage
+- yfinance
+- python-dotenv
 
 ## Installation
 
@@ -47,25 +50,30 @@ pip3 install -r requirements.txt
 
 ## Usage
 
-1. Set your Alpha Vantage API key:
+1. Set your Alpha Vantage API key (required for Alpha Vantage data source):
 ```bash
 export ALPHA_VANTAGE_API_KEY="your_api_key"
 ```
 
-2. Run the DCF analysis:
+2. Run the DCF analysis with your preferred data source:
 ```bash
-python3 examples/dcf_analyzer.py
+# Using Alpha Vantage (default)
+python3 app/dcf_analyzer.py --tickers NVDA AAPL --source alpha_vantage
+
+# Using Yahoo Finance
+python3 app/dcf_analyzer.py --tickers NVDA AAPL --source yfinance
 ```
 
 ## Example Output
 
 ```
 分析股票: NVDA
+数据源: yfinance
 ==================================================
 公司基本信息:
 Name: NVIDIA Corporation
-Sector: MANUFACTURING
-Industry: SEMICONDUCTORS & RELATED DEVICES
+Sector: TECHNOLOGY
+Industry: SEMICONDUCTORS
 MarketCapitalization: $3444.02B
 ...
 
@@ -77,6 +85,11 @@ BASE情景:
 ...
 ```
 
+## Data Source Notes
+
+- **Alpha Vantage**: Requires API key (free tier available), provides comprehensive fundamental data
+- **Yahoo Finance**: Free but may have less complete fundamental data, good for quick analysis
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -85,23 +98,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## DCF Analyzer
+## 高级用法
 
-To run the DCF valuation analysis, use the following command:
-
+强制从API获取最新数据（跳过缓存）：
 ```bash
-python3 app/dcf_analyzer.py --tickers TICKER1 TICKER2 ...
+python3 app/dcf_analyzer.py --tickers NVDA --source yfinance --no-cache
 ```
 
-Where:
-- `TICKER1 TICKER2 ...` are the stock symbols you want to analyze (e.g. NVDA AAPL META)
-
-Make sure to set your Alpha Vantage API key as an environment variable:
-```bash
-export ALPHA_VANTAGE_API_KEY=your_api_key_here
-```
-
-Example usage:
-```bash
-python3 app/dcf_analyzer.py --tickers NVDA AAPL
-``` 
+缓存目录：`data/`（自动创建）

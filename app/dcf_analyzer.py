@@ -20,15 +20,15 @@ def format_currency(value: float) -> str:
     else:
         return f"${value:.2f}"
 
-def analyze_stock(ticker: str):
+def analyze_stock(ticker: str, data_source: str = 'alpha_vantage', use_cache: bool = True):
     """分析股票并输出DCF估值结果"""
-    print(f"\n分析股票: {ticker}")
+    print(f"\n分析股票: {ticker} (数据源: {data_source}, 缓存: {'启用' if use_cache else '禁用'})")
     print("=" * 50)
     
     try:
         # 获取数据
         fetcher = DataFetcher()
-        company_data = fetcher.get_company_overview(ticker)
+        company_data = fetcher.get_company_overview(ticker, source=data_source, use_cache=use_cache)
         if not company_data:
             print(f"无法获取{ticker}的公司数据")
             return
@@ -41,7 +41,7 @@ def analyze_stock(ticker: str):
         print(f"MarketCapitalization: {format_currency(float(company_data.get('MarketCapitalization', 0)))}")
         
         # 获取财务数据
-        financial_data = fetcher.get_financial_data(ticker)
+        financial_data = fetcher.get_financial_data(ticker, source=data_source, use_cache=use_cache)
         if not financial_data:
             print(f"无法获取{ticker}的财务数据")
             return
@@ -88,11 +88,14 @@ def main():
     # 解析命令行参数
     parser = argparse.ArgumentParser(description='股票DCF估值分析工具')
     parser.add_argument('--tickers', nargs='+', required=True, help='股票代码列表，例如 NVDA AAPL META')
+    parser.add_argument('--source', choices=['alpha_vantage', 'yfinance'], default='alpha_vantage', 
+                       help='数据源 (alpha_vantage 或 yfinance)')
+    parser.add_argument('--no-cache', action='store_true', help='强制从API获取数据，忽略缓存')
     args = parser.parse_args()
 
     # 分析股票
     for ticker in args.tickers:
-        analyze_stock(ticker)
+        analyze_stock(ticker, data_source=args.source, use_cache=not args.no_cache)
         print("\n" + "="*50)
 
 if __name__ == "__main__":
