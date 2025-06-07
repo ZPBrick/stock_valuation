@@ -83,4 +83,25 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## DCF Analyzer
+
+To run the DCF valuation analysis, use the following command:
+
+```bash
+python3 app/dcf_analyzer.py --tickers TICKER1 TICKER2 ...
+```
+
+Where:
+- `TICKER1 TICKER2 ...` are the stock symbols you want to analyze (e.g. NVDA AAPL META)
+
+Make sure to set your Alpha Vantage API key as an environment variable:
+```bash
+export ALPHA_VANTAGE_API_KEY=your_api_key_here
+```
+
+Example usage:
+```bash
+python3 app/dcf_analyzer.py --tickers NVDA AAPL
+``` 

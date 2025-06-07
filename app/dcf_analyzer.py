@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 from typing import Dict, List
 
 # 添加项目根目录到Python路径
@@ -83,11 +84,14 @@ def main():
     if not os.getenv('ALPHA_VANTAGE_API_KEY'):
         print("错误: 请设置ALPHA_VANTAGE_API_KEY环境变量")
         return
-    
-    # 分析示例股票
-    # tickers = ['NVDA', 'AAPL', 'META']
-    tickers = ['NVDA']
-    for ticker in tickers:
+
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='股票DCF估值分析工具')
+    parser.add_argument('--tickers', nargs='+', required=True, help='股票代码列表，例如 NVDA AAPL META')
+    args = parser.parse_args()
+
+    # 分析股票
+    for ticker in args.tickers:
         analyze_stock(ticker)
         print("\n" + "="*50)
 
