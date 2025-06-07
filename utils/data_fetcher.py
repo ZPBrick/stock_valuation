@@ -62,27 +62,19 @@ class DataFetcher:
             return None
     
     def get_yfinance_data(self, ticker: str) -> Dict:
-        """从Yahoo Finance获取数据"""
+        """从Yahoo Finance获取更完整的数据"""
         try:
-            print(f"从Yahoo Finance获取{ticker}的数据...")
             stock = yf.Ticker(ticker)
-            
-            # 获取基本信息
             info = stock.info
-            
-            # 获取财务数据
+            # 确保获取完整的财务数据
             financials = {
-                'balance_sheet': stock.balance_sheet.to_dict(orient='records') if not stock.balance_sheet.empty else [],
-                'income_stmt': stock.income_stmt.to_dict(orient='records') if not stock.income_stmt.empty else [],
-                'cash_flow': stock.cashflow.to_dict(orient='records') if not stock.cashflow.empty else []
+                'balance_sheet': stock.balance_sheet.to_dict(orient='records'),
+                'income_stmt': stock.income_stmt.to_dict(orient='records'),
+                'cash_flow': stock.cashflow.to_dict(orient='records')
             }
-            
-            return {
-                'overview': info,
-                'financials': financials
-            }
+            return {'overview': info, 'financials': financials}
         except Exception as e:
-            print(f"从Yahoo Finance获取数据时出错: {str(e)}")
+            print(f"Yahoo Finance数据获取失败: {str(e)}")
             return {}
     
     def get_company_overview(self, ticker: str, source: str = 'alpha_vantage', use_cache: bool = True) -> Dict:
@@ -129,45 +121,31 @@ class DataFetcher:
             print(f"获取公司概览数据时出错: {str(e)}")
             return {}
     
-    def get_financial_data(self, ticker: str, source: str = 'alpha_vantage', use_cache: bool = True) -> Dict:
-        """获取公司财务数据"""
+    def get_financial_data(self, ticker: str, source: str, use_cache: bool = True) -> Dict:
+        """优先使用Alpha Vantage数据"""
         if use_cache:
-            financials = self.load_from_cache(ticker, 'financials')
-            if financials:
-                print(f"从缓存加载{ticker}的财务数据")
-                return financials
+            cached_data = self.load_from_cache(ticker, 'financials')
+            if cached_data:
+                return cached_data
 
         if source == 'yfinance':
             yf_data = self.get_yfinance_data(ticker)
-            if yf_data and 'financials' in yf_data:
+            if yf_data.get('financials'):
                 self.save_to_cache(yf_data['financials'], ticker, 'financials')
                 return yf_data['financials']
         
+        # Alpha Vantage作为后备
         try:
-            print(f"从Alpha Vantage获取{ticker}的财务数据...")
-            cash_flow_df, _ = self.fd.get_cash_flow_annual(ticker)
-            if cash_flow_df.empty:
-                raise ValueError("现金流量表数据为空")
-            time.sleep(12)
-            
-            balance_sheet_df, _ = self.fd.get_balance_sheet_annual(ticker)
-            if balance_sheet_df.empty:
-                raise ValueError("资产负债表数据为空")
-            time.sleep(12)
-            
-            income_stmt_df, _ = self.fd.get_income_statement_annual(ticker)
-            if income_stmt_df.empty:
-                raise ValueError("利润表数据为空")
-            
+            cash_flow, _ = self.fd.get_cash_flow_annual(ticker)
+            balance_sheet, _ = self.fd.get_balance_sheet_annual(ticker)
+            income_stmt, _ = self.fd.get_income_statement_annual(ticker)
             financials = {
-                'cash_flow': cash_flow_df.to_dict(orient='records'),
-                'balance_sheet': balance_sheet_df.to_dict(orient='records'),
-                'income_stmt': income_stmt_df.to_dict(orient='records')
+                'cash_flow': cash_flow.to_dict(orient='records'),
+                'balance_sheet': balance_sheet.to_dict(orient='records'),
+                'income_stmt': income_stmt.to_dict(orient='records')
             }
-            
             self.save_to_cache(financials, ticker, 'financials')
             return financials
-            
         except Exception as e:
-            print(f"获取财务数据时出错: {str(e)}")
+            print(f"Alpha Vantage数据获取失败: {str(e)}")
             return {} 

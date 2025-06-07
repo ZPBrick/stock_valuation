@@ -20,7 +20,7 @@ def format_currency(value: float) -> str:
     else:
         return f"${value:.2f}"
 
-def analyze_stock(ticker: str, data_source: str = 'alpha_vantage', use_cache: bool = True):
+def analyze_stock(ticker: str, data_source: str, use_cache: bool, debug: bool = False):
     """分析股票并输出DCF估值结果"""
     print(f"\n分析股票: {ticker} (数据源: {data_source}, 缓存: {'启用' if use_cache else '禁用'})")
     print("=" * 50)
@@ -46,6 +46,12 @@ def analyze_stock(ticker: str, data_source: str = 'alpha_vantage', use_cache: bo
             print(f"无法获取{ticker}的财务数据")
             return
             
+        if debug:
+            print(f"\n[调试] {ticker} 关键输入数据:")
+            print(f"- 市值: {company_data.get('MarketCapitalization', 'N/A')}")
+            print(f"- 自由现金流: {DCFModel(ticker, {'financials': financial_data}).get_historical_fcf()[-1:]}")
+            print(f"- 负债率: {float(company_data.get('TotalDebt', 0)) / float(company_data.get('MarketCapitalization', 1)):.1%}")
+        
         # 创建DCF模型
         data = {
             'overview': company_data,
@@ -75,6 +81,12 @@ def analyze_stock(ticker: str, data_source: str = 'alpha_vantage', use_cache: bo
             print(f"企业价值: {format_currency(result['enterprise_value'])}")
             print(f"股权价值: {format_currency(result['equity_value'])}")
             
+            if debug:
+                print(f"\n[调试] 估值中间变量:")
+                print(f"- WACC: {result['wacc']:.1%}")
+                print(f"- 永续增长率: {result['terminal_growth']:.1%}")
+                print(f"- 预测增长率: {result['growth_rate']:.1%}")
+            
     except Exception as e:
         print(f"分析过程中出错: {str(e)}")
 
@@ -91,11 +103,15 @@ def main():
     parser.add_argument('--source', choices=['alpha_vantage', 'yfinance'], default='alpha_vantage', 
                        help='数据源 (alpha_vantage 或 yfinance)')
     parser.add_argument('--no-cache', action='store_true', help='强制从API获取数据，忽略缓存')
+    parser.add_argument('--debug', action='store_true', help='打印调试信息')
     args = parser.parse_args()
 
     # 分析股票
     for ticker in args.tickers:
-        analyze_stock(ticker, data_source=args.source, use_cache=not args.no_cache)
+        analyze_stock(ticker, 
+                     data_source=args.source, 
+                     use_cache=not args.no_cache,
+                     debug=args.debug)
         print("\n" + "="*50)
 
 if __name__ == "__main__":

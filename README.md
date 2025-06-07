@@ -100,9 +100,40 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 高级用法
 
-强制从API获取最新数据（跳过缓存）：
 ```bash
-python3 app/dcf_analyzer.py --tickers NVDA --source yfinance --no-cache
+# 基本用法
+python3 app/dcf_analyzer.py --tickers NVDA
+
+# 调试模式（显示详细计算过程）
+python3 app/dcf_analyzer.py --tickers NVDA --debug
+
+# 跳过缓存并调试
+python3 app/dcf_analyzer.py --tickers NVDA --no-cache --debug
 ```
 
-缓存目录：`data/`（自动创建）
+## 测试验证
+
+### 命令示例：
+```bash
+# 普通运行
+python3 app/dcf_analyzer.py --tickers NVDA
+
+# 调试运行
+python3 app/dcf_analyzer.py --tickers NVDA --debug
+```
+
+### 预期调试输出：
+```
+[调试] NVDA 关键输入数据:
+- 市值: 800000000000
+- 自由现金流: [8500000000]
+- 负债率: 10.0%
+
+[DCF模型调试] 当前自由现金流: 8500000000
+[DCF模型调试] WACC: 8.50%
+[DCF模型调试] 使用增长率: 25.00%
+
+BASE情景:
+估计内在价值: $450.20
+...
+```
